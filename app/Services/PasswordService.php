@@ -97,13 +97,19 @@ class PasswordService
 
         if (! $user) {
 
-            return [
+            // return [
 
-                'status' => false,
+            //     'status' => false,
 
-                'message' => 'Employee not found.',
+            //     'message' => 'Employee not found.',
 
-            ];
+            // ];
+
+            return ServiceResponse::error(
+
+            'Employee not found.'
+
+            );
         }
 
         if ((int) $user->status !== 1) {

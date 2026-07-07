@@ -2,8 +2,10 @@
 
 namespace App\Services;
 
+use App\Constants\LoginStatus;
 use App\Models\LoginLog;
 use App\Models\User;
+use App\Support\ServiceResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -40,7 +42,7 @@ class LoginService
                 $this->saveLoginLog(
                     null,
                     $credentials['employee_code'],
-                    LoginLog::FAILED_EMPLOYEE,
+                    LoginStatus::FAILED_EMPLOYEE,
                     $request
                 );
 
@@ -58,7 +60,7 @@ class LoginService
                 $this->saveLoginLog(
                     $user->id,
                     $user->employee_code,
-                    LoginLog::FAILED_INACTIVE,
+                    LoginStatus::FAILED_INACTIVE,
                     $request
                 );
 
@@ -76,7 +78,7 @@ class LoginService
                 $this->saveLoginLog(
                     $user->id,
                     $user->employee_code,
-                    LoginLog::FAILED_PASSWORD,
+                    LoginStatus::FAILED_PASSWORD,
                     $request
                 );
 
@@ -101,21 +103,32 @@ class LoginService
             $this->saveLoginLog(
                 $user->id,
                 $user->employee_code,
-                LoginLog::SUCCESS,
+                LoginStatus::SUCCESS,
                 $request
             );
 
-            return [
+            // return [
 
-                'status' => true,
+            //     'status' => true,
 
-                'message' => 'Login Successful.',
+            //     'message' => 'Login Successful.',
 
-                'user' => $user,
+            //     'user' => $user,
 
-                'force_password_change' => (bool) $user->force_password_change,
+            //     'force_password_change' => (bool) $user->force_password_change,
 
-            ];
+            // ];
+            return ServiceResponse::success(
+
+                LoginStatus::SUCCESS,
+
+                [
+                    'user' => $user,
+                    'force_password_change' => (bool)$user->force_password_change
+
+                ]
+
+            );
         } catch (\Throwable $e) {
 
             report($e);

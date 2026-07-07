@@ -39,19 +39,23 @@ return new class extends Migration
 
             $table->unsignedBigInteger('state_id')->nullable();
 
-            $table->unsignedBigInteger('state_board')->nullable();
+            $table->unsignedBigInteger('state_board_id')->nullable();
 
             $table->unsignedBigInteger('port_id')->nullable();
 
             $table->unsignedBigInteger('role_id');
 
-            $table->unsignedBigInteger('dep_id')->nullable();
+            $table->unsignedBigInteger('department_id')->nullable();
 
-            $table->string('port_type')->nullable();
+            $table->unsignedBigInteger('port_type_id')->nullable();
 
-            $table->unsignedBigInteger('report_to')->nullable();
+            $table->unsignedBigInteger('report_to_user_id')->nullable();
 
             $table->json('extra_module')->nullable();
+
+            $table->unsignedBigInteger('created_by')->nullable()->comment('Create User ID');
+
+            $table->unsignedBigInteger('updated_by')->nullable()->comment('Admin ID');
 
             $table->string('password');
 
