@@ -7,7 +7,6 @@
 @section('content')
 
     <div class="container-fluid">
-
         {{-- ========================================================= --}}
         {{-- Page Header --}}
         {{-- ========================================================= --}}
@@ -232,7 +231,24 @@
 
                         <strong>Port</strong>
 
-                        <p>{{ $employee->port?->port_name ?? '-' }}</p>
+                        <p>
+                            @if ($employee->assignedPorts->count())
+                                <ul>
+
+                                    @foreach ($employee->assignedPorts as $port)
+                                        <li>
+
+                                            {{ $port->port_name }}
+
+                                        </li>
+                                    @endforeach
+
+                                </ul>
+                            @else
+                                {{ $employee->port?->port_name ?? '-' }}
+
+                            @endif
+                        </p>
 
                     </div>
 

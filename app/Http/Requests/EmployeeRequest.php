@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Role;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -39,7 +40,7 @@ class EmployeeRequest extends FormRequest
             ],
 
             'title' => [
-                'nullable',
+                'required',
                 'string',
                 'max:20',
             ],
@@ -76,7 +77,7 @@ class EmployeeRequest extends FormRequest
             ],
 
             'mobile_number' => [
-                'nullable',
+                'required',
                 'digits_between:10,15',
             ],
 
@@ -113,12 +114,23 @@ class EmployeeRequest extends FormRequest
             ],
 
             'state_board_id' => [
-                'required',
+                'nullable',
+                // 'required',
                 'exists:state_boards,id',
             ],
 
             'port_id' => [
-                'required',
+                'nullable',
+                // 'required',
+                'exists:ports,id',
+            ],
+
+            'ports' => [
+                'nullable',
+                'array',
+            ],
+
+            'ports.*' => [
                 'exists:ports,id',
             ],
 
@@ -176,8 +188,8 @@ class EmployeeRequest extends FormRequest
             'organization_id.required' => 'Please select Organization.',
             'organization_id.exists'   => 'Invalid Organization selected.',
 
-            'dep_id.required' => 'Please select Department.',
-            'dep_id.exists'   => 'Invalid Department selected.',
+            'department_id.required' => 'Please select Department.',
+            'department_id.exists'   => 'Invalid Department selected.',
 
             'role_id.required' => 'Please select Role.',
             'role_id.exists'   => 'Invalid Role selected.',
@@ -186,6 +198,89 @@ class EmployeeRequest extends FormRequest
             'password.confirmed' => 'Password confirmation does not match.',
             'password.min'       => 'Password must be at least 8 characters.',
             'password.regex'     => 'Password must contain uppercase, lowercase, number and special character.',
+
+            'state_id.required' => 'Please select States.',
+            'state_id.exists'   => 'Invalid States selected.',
+
+            'state_board_id.required' => 'Please select States Doard.',
+            'state_board_id.exists'   => 'Invalid States Doard selected.',
+
+            'port_id.required' => 'Please select Port.',
+            'port_id.exists'   => 'Invalid Port selected.',
+
+            'port_type_id.required' => 'Please select Port Type.',
+            'port_type_id.exists'   => 'Invalid Port Type selected.',
+
+            'mobile_number.required' => 'Mobile Number is required.',
+            'mobile_number.exists'   => 'Invalid Mobile Number selected.',
+
+            'report_to_user_id.required' => 'Please select Report To User.',
+            'report_to_user_id.exists'   => 'Invalid Report To User selected.',
         ];
+    }
+
+    public function withValidator($validator)
+    {
+        $validator->after(function ($validator) {
+
+            $role = Role::find($this->role_id);
+
+            if (!$role) {
+                return;
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | State Board Validation
+            |--------------------------------------------------------------------------
+            */
+
+            if (
+                $this->port_type_id == 2 &&
+                empty($this->state_board_id)
+            ) {
+
+                $validator->errors()->add(
+                    'state_board_id',
+                    'Please select State Board.'
+                );
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Multiple Port Role
+            |--------------------------------------------------------------------------
+            */
+
+            if ($role->assignment_type === 'MULTIPLE') {
+
+                if (
+                    empty($this->ports) ||
+                    count($this->ports) === 0
+                ) {
+
+                    $validator->errors()->add(
+                        'ports',
+                        'Please select at least one Port.'
+                    );
+                }
+
+                return;
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Single Port Role
+            |--------------------------------------------------------------------------
+            */
+
+            if (empty($this->port_id)) {
+
+                $validator->errors()->add(
+                    'port_id',
+                    'Please select Port.'
+                );
+            }
+        });
     }
 }

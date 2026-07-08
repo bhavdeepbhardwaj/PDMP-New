@@ -35,6 +35,8 @@ class EmployeeService
 
         'port',
 
+        'assignedPorts',
+
         'reportingOfficer',
 
     ];
@@ -465,6 +467,35 @@ class EmployeeService
 
                     $employee = User::create($data);
 
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Multiple Port Assignment
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $role = $employee->role;
+
+                    if ($role && $role->assignment_type === 'MULTIPLE') {
+
+                        $employee->assignedPorts()->sync(
+
+                            $data['ports'] ?? []
+
+                        );
+
+                        /*
+                        |--------------------------------------------------------------------------
+                        | Main Port NULL
+                        |--------------------------------------------------------------------------
+                        */
+
+                        $employee->update([
+
+                            'port_id' => null
+
+                        ]);
+                    }
+
                     // dd(
                     //     $data,
                     //     $employee->toArray()
@@ -572,6 +603,32 @@ class EmployeeService
                     */
 
                     $user->update($data);
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Multiple Port Assignment
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $role = $user->role;
+
+                    if ($role && $role->assignment_type === 'MULTIPLE') {
+
+                        $user->assignedPorts()->sync(
+
+                            $data['ports'] ?? []
+
+                        );
+
+                        $user->update([
+
+                            'port_id' => null
+
+                        ]);
+                    } else {
+
+                        $user->assignedPorts()->detach();
+                    }
 
                     return $user->fresh(
                         self::RELATIONS

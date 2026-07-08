@@ -119,7 +119,8 @@
                             </label>
 
                             <input type="text" name="search" class="form-control"
-                                placeholder="Employee Code / Name / Username / Email / Mobile" value="{{ request('search') }}">
+                                placeholder="Employee Code / Name / Username / Email / Mobile"
+                                value="{{ request('search') }}">
 
                         </div>
 
@@ -395,7 +396,8 @@
 
                 <div class="table-responsive">
 
-                    <table class="table table-bordered table-hover table-striped align-middle mb-0 text-nowrap" id="searchForm">
+                    <table class="table table-bordered table-hover table-striped align-middle mb-0 text-nowrap"
+                        id="searchForm">
 
                         <thead class="table-dark">
 
@@ -476,7 +478,17 @@
 
                                     <td>
 
-                                        {{ $employee->port?->port_name ?? '-' }}
+                                        @if ($employee->assignedPorts->count())
+                                            @foreach ($employee->assignedPorts as $port)
+                                                <span class="badge bg-primary">
+
+                                                    {{ $port->port_name }}
+
+                                                </span>
+                                            @endforeach
+                                        @else
+                                            {{ $employee->port?->port_name ?? '-' }}
+                                        @endif
 
                                     </td>
 
@@ -502,7 +514,8 @@
 
                                         {{-- View --}}
 
-                                        <a href="{{ route('employees.show', $employee) }}" class="btn btn-sm btn-info" title="View Employee">
+                                        <a href="{{ route('employees.show', $employee) }}" class="btn btn-sm btn-info"
+                                            title="View Employee">
 
                                             <i class="fa fa-eye"></i>
 
@@ -510,8 +523,8 @@
 
                                         {{-- Edit --}}
 
-                                        <a href="{{ route('employees.edit', $employee) }}"
-                                            class="btn btn-sm btn-warning" title="Edit Employee">
+                                        <a href="{{ route('employees.edit', $employee) }}" class="btn btn-sm btn-warning"
+                                            title="Edit Employee">
 
                                             <i class="fa fa-edit"></i>
 

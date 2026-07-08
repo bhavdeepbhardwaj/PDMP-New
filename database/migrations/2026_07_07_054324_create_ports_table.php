@@ -15,6 +15,8 @@ return new class extends Migration
 
             $table->id();
 
+            $table->unsignedBigInteger('state_id')->nullable();
+
             $table->unsignedBigInteger('state_board_id')->nullable();
 
             $table->unsignedBigInteger('port_type_id')->nullable();
@@ -22,6 +24,8 @@ return new class extends Migration
             $table->string('port_name',200);
 
             $table->string('port_code',30)->unique();
+
+            $table->text('port_data_code')->nullable();
 
             $table->text('description')->nullable();
 

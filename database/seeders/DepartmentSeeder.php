@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\Department;
 
@@ -13,27 +12,41 @@ class DepartmentSeeder extends Seeder
      */
     public function run(): void
     {
-        Department::insert([
+        $departments = [
             [
-                'department_code' => 'IT',
-                'department_name' => 'Information Technology',
+                'department_code' => 'CHD',
+                'department_name' => 'Cargo Handling Division',
                 'status' => 1,
             ],
             [
-                'department_code' => 'ADMIN',
-                'department_name' => 'Administration',
+                'department_code' => 'TD',
+                'department_name' => 'Traffic Department',
                 'status' => 1,
             ],
             [
-                'department_code' => 'OPS',
-                'department_name' => 'Operations',
+                'department_code' => 'PDD',
+                'department_name' => 'Planning and Development Department',
                 'status' => 1,
             ],
             [
-                'department_code' => 'ACC',
-                'department_name' => 'Accounts',
+                'department_code' => 'WSD',
+                'department_name' => 'Warehousing and Storage Department',
                 'status' => 1,
             ],
-        ]);
+            [
+                'department_code' => 'MD',
+                'department_name' => 'Marine Department',
+                'status' => 1,
+            ],
+        ];
+
+        foreach ($departments as $department) {
+            Department::updateOrCreate(
+                [
+                    'department_code' => $department['department_code'],
+                ],
+                $department
+            );
+        }
     }
 }

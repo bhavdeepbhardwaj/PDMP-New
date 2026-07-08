@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\User;
 
@@ -35,7 +34,7 @@ class UsersTableSeeder extends Seeder
                 'port_type_id' => 1,
                 'report_to_user_id' => null,
                 'extra_module' => ['dashboard', 'reports'],
-                'password' =>  bcrypt('12345678'),
+                'password' =>  bcrypt('123456789'),
                 'status' => true,
                 'force_password_change' => 0,
                 'password_changed_at' => now(),
@@ -43,9 +42,12 @@ class UsersTableSeeder extends Seeder
             ],
         ];
 
-            // Looping and Inserting Array's Users into User Table
+        // Looping and Inserting Array's Users into User Table
         foreach ($users as $user) {
-            User::create($user);
+            User::updateOrCreate(
+                ['employee_code' => $user['employee_code']],
+                $user
+            );
         }
     }
 }

@@ -169,7 +169,7 @@
                 <div class="col-md-4 mb-3">
 
                     <label class="form-label">
-                        Confirm Password
+                        Confirm Password <span class="text-danger">*</span>
                     </label>
 
                     <input type="password" name="password_confirmation" class="form-control">
@@ -200,7 +200,7 @@
             {{-- Organization --}}
             <div class="col-md-4 mb-3">
 
-                <label class="form-label">Organization</label>
+                <label class="form-label">Organization <span class="text-danger">*</span></label>
 
                 <select name="organization_id" class="form-select">
 
@@ -217,7 +217,7 @@
                 </select>
 
                 @error('organization_id')
-                    <div class="invalid-feedback">{{ $message }}</div>
+                    <small class="text-danger">{{ $message }}</small>
                 @enderror
 
             </div>
@@ -225,7 +225,7 @@
             {{-- Department --}}
             <div class="col-md-4 mb-3">
 
-                <label class="form-label">Department</label>
+                <label class="form-label">Department <span class="text-danger">*</span></label>
 
                 <select name="department_id" class="form-select">
 
@@ -250,14 +250,17 @@
             {{-- Role --}}
             <div class="col-md-4 mb-3">
 
-                <label class="form-label">Role</label>
+                <label class="form-label">Role <span class="text-danger">*</span></label>
 
-                <select name="role_id" class="form-select">
+                <select name="role_id" id="role_id" class="form-select">
 
-                    <option value="">Select</option>
+                    <option value="">
+                        Select Role
+                    </option>
 
                     @foreach ($roles as $role)
-                        <option value="{{ $role->id }}" @selected(old('role_id', $employee->role_id ?? '') == $role->id)>
+                        <option value="{{ $role->id }}" data-access-scope="{{ $role->access_scope }}"
+                            data-assignment-type="{{ $role->assignment_type }}" @selected(old('role_id', $employee->role_id ?? '') == $role->id)>
 
                             {{ $role->role_name }}
 
@@ -279,6 +282,7 @@
             {{-- ========================================================= --}}
             {{-- State --}}
             {{-- ========================================================= --}}
+
             <div class="col-md-3 mb-3">
 
                 <label for="state_id" class="form-label">
@@ -302,11 +306,11 @@
                 </select>
 
                 @error('state_id')
-                    <div class="invalid-feedback">
+                    <small class="text-danger">
 
                         {{ $message }}
 
-                    </div>
+                    </small>
                 @enderror
 
             </div>
@@ -314,7 +318,8 @@
             {{-- ========================================================= --}}
             {{-- Port Type --}}
             {{-- ========================================================= --}}
-            <div class="col-md-4 mb-3">
+
+            <div class="col-md-4 mb-3" id="port-type-wrapper">
 
                 <label for="port_type_id" class="form-label">
                     Port Type <span class="text-danger">*</span>
@@ -336,7 +341,7 @@
                 </select>
 
                 @error('port_type_id')
-                    <div class="invalid-feedback">{{ $message }}</div>
+                    <small class="text-danger">{{ $message }}</small>
                 @enderror
 
             </div>
@@ -344,10 +349,11 @@
             {{-- ========================================================= --}}
             {{-- State Board --}}
             {{-- ========================================================= --}}
-            <div class="col-md-4 mb-3">
+
+            <div class="col-md-4 mb-3" id="state-board-wrapper">
 
                 <label for="state_board_id" class="form-label">
-                    State Board
+                    State Board <span class="text-danger">*</span>
                 </label>
 
                 <select name="state_board_id" id="state_board_id"
@@ -358,7 +364,7 @@
                 </select>
 
                 @error('state_board_id')
-                    <div class="invalid-feedback">{{ $message }}</div>
+                    <small class="text-danger">{{ $message }}</small>
                 @enderror
 
             </div>
@@ -366,7 +372,8 @@
             {{-- ========================================================= --}}
             {{-- Port --}}
             {{-- ========================================================= --}}
-            <div class="col-md-4 mb-3">
+
+            <div class="col-md-4 mb-3" id="port-wrapper">
 
                 <label for="port_id" class="form-label">
                     Port <span class="text-danger">*</span>
@@ -379,7 +386,35 @@
                 </select>
 
                 @error('port_id')
-                    <div class="invalid-feedback">{{ $message }}</div>
+                    <small class="text-danger">{{ $message }}</small>
+                @enderror
+
+            </div>
+
+            {{-- ========================================================= --}}
+            {{-- Multiple Ports --}}
+            {{-- ========================================================= --}}
+
+            <div class="col-md-4 mb-3" id="multiple-port-wrapper" style="display:none;">
+
+                <label for="ports" class="form-label">
+
+                    Assigned Ports
+
+                    <span class="text-danger">*</span>
+
+                </label>
+
+                <select name="ports[]" id="ports" class="form-select select2" multiple>
+
+                </select>
+
+                @error('ports')
+                    <small class="text-danger">
+
+                        {{ $message }}
+
+                    </small>
                 @enderror
 
             </div>
@@ -390,39 +425,41 @@
         {{-- ========================================================= --}}
         {{-- Reporting Officer --}}
         {{-- ========================================================= --}}
-        <div class="col-md-3 mb-3">
+        <div class="row">
+            <div class="col-md-3 mb-3">
 
-            <label for="report_to_user_id" class="form-label">
+                <label for="report_to_user_id" class="form-label">
 
-                Reporting Officer
+                    Reporting Officer <span class="text-danger">*</span>
 
-            </label>
+                </label>
 
-            <select name="report_to_user_id" id="report_to_user_id"
-                class="form-select @error('report_to_user_id') is-invalid @enderror">
+                <select name="report_to_user_id" id="report_to_user_id"
+                    class="form-select @error('report_to_user_id') is-invalid @enderror">
 
-                <option value="">Select Reporting Officer</option>
+                    <option value="">Select Reporting Officer</option>
 
-                @foreach ($reportingOfficers as $officer)
-                    <option value="{{ $officer->id }}" @selected(old('report_to_user_id', $employee->report_to_user_id ?? '') == $officer->id)>
+                    @foreach ($reportingOfficers as $officer)
+                        <option value="{{ $officer->id }}" @selected(old('report_to_user_id', $employee->report_to_user_id ?? '') == $officer->id)>
 
-                        {{ $officer->employee_code }}
-                        -
-                        {{ $officer->full_name }}
+                            {{ $officer->employee_code }}
+                            -
+                            {{ $officer->full_name }}
 
-                    </option>
-                @endforeach
+                        </option>
+                    @endforeach
 
-            </select>
+                </select>
 
-            @error('report_to_user_id')
-                <div class="invalid-feedback">
+                @error('report_to_user_id')
+                    <small class="text-danger">
 
-                    {{ $message }}
+                        {{ $message }}
 
-                </div>
-            @enderror
+                    </small>
+                @enderror
 
+            </div>
         </div>
 
     </div>
@@ -435,6 +472,12 @@
         value="{{ old('state_board_id', $employee->state_board_id ?? '') }}">
 
     <input type="hidden" id="selected_port" value="{{ old('port_id', $employee->port_id ?? '') }}">
+
+    {{-- <input type="hidden" id="selected_ports"
+        value="{{ old('ports', isset($employee) ? $employee->assignedPorts->pluck('id')->implode(',') : '') }}"> --}}
+
+    <input type="hidden" id="selected_ports"
+        value="{{ is_array(old('ports')) ? implode(',', old('ports')) : old('selected_ports', $selectedPorts) }}">
 
 </div>
 
@@ -457,11 +500,19 @@
             <div class="col-md-4 mb-3">
 
                 <label class="form-label">
-                    Mobile Number
+                    Mobile Number <span class="text-danger">*</span>
                 </label>
 
                 <input type="text" name="mobile_number" class="form-control"
                     value="{{ old('mobile_number', $employee->mobile_number ?? '') }}">
+
+                @error('mobile_number')
+                    <small class="text-danger">
+
+                        {{ $message }}
+
+                    </small>
+                @enderror
 
             </div>
 
@@ -530,223 +581,5 @@
 </div>
 
 @push('scripts')
-    <script>
-        $(function() {
-
-            const PORT_TYPE_MAJOR = 1;
-            const PORT_TYPE_NON_MAJOR = 2;
-
-            const portType = $('#port_type_id');
-            const stateBoard = $('#state_board_id');
-            const port = $('#port_id');
-
-            const selectedStateBoard = $('#selected_state_board').val();
-            const selectedPort = $('#selected_port').val();
-
-            function resetStateBoard() {
-                stateBoard.html(
-                    '<option value="">Select State Board</option>'
-                );
-            }
-
-            function resetPort() {
-                port.html(
-                    '<option value="">Select Port</option>'
-                );
-            }
-
-            function hideStateBoard() {
-                stateBoard
-                    .closest('.col-md-4')
-                    .hide();
-            }
-
-            function showStateBoard() {
-                stateBoard
-                    .closest('.col-md-4')
-                    .show();
-            }
-
-            function loadStateBoards(callback = null) {
-                resetStateBoard();
-
-                $.get(
-                    '/ajax/master/state-boards',
-                    function(response) {
-
-                        if (!response.status) {
-                            return;
-                        }
-
-                        $.each(response.data, function(_, item) {
-
-                            stateBoard.append(
-
-                                `<option value="${item.id}">
-                            ${item.board_name}
-                        </option>`
-
-                            );
-
-                        });
-
-                        if (selectedStateBoard) {
-
-                            stateBoard.val(selectedStateBoard);
-
-                        }
-
-                        if (callback) {
-                            callback();
-                        }
-
-                    }
-                );
-            }
-
-            function loadPortsByCategory(callback = null) {
-
-                resetPort();
-
-                $.get(
-                    '/ajax/master/port-categories/' + portType.val() + '/ports',
-                    function(response) {
-
-                        if (!response.status) {
-                            return;
-                        }
-
-                        $.each(response.data, function(_, item) {
-
-                            port.append(
-                                `<option value="${item.id}">
-                    ${item.port_name}
-                </option>`
-                            );
-
-                        });
-
-                        if (selectedPort) {
-                            port.val(selectedPort);
-                        }
-
-                        if (callback) {
-                            callback();
-                        }
-
-                    }
-                );
-
-            }
-
-            function loadPortsByStateBoard() {
-
-                resetPort();
-
-                $.get(
-
-                    '/ajax/master/state-boards/' + stateBoard.val() + '/ports',
-
-                    function(response) {
-
-                        if (!response.status) {
-                            return;
-                        }
-
-                        $.each(response.data, function(_, item) {
-
-                            port.append(
-                                `<option value="${item.id}">
-                        ${item.port_name}
-                    </option>`
-                            );
-
-                        });
-
-                        if (selectedPort) {
-                            port.val(selectedPort);
-                        }
-
-                    }
-
-                );
-            }
-
-            /*
-            |--------------------------------------------------------------------------
-            | Port Type Change
-            |--------------------------------------------------------------------------
-            */
-
-            portType.change(function() {
-
-                resetPort();
-                resetStateBoard();
-
-                if ($(this).val() == PORT_TYPE_MAJOR) {
-
-                    hideStateBoard();
-
-                    loadPortsByCategory();
-
-                } else if ($(this).val() == PORT_TYPE_NON_MAJOR) {
-
-                    showStateBoard();
-
-                    loadStateBoards();
-
-                } else {
-
-                    hideStateBoard();
-
-                }
-
-            });
-
-            /*
-            |--------------------------------------------------------------------------
-            | State Board Change
-            |--------------------------------------------------------------------------
-            */
-
-            stateBoard.change(function() {
-
-                if ($(this).val()) {
-
-                    loadPortsByStateBoard();
-
-                }
-
-            });
-
-            /*
-            |--------------------------------------------------------------------------
-            | Edit Mode
-            |--------------------------------------------------------------------------
-            */
-
-            if (portType.val() == PORT_TYPE_MAJOR) {
-
-                hideStateBoard();
-
-                loadPortsByCategory();
-
-            } else if (portType.val() == PORT_TYPE_NON_MAJOR) {
-
-                showStateBoard();
-
-                loadStateBoards(function() {
-
-                    loadPortsByStateBoard();
-
-                });
-
-            } else {
-
-                hideStateBoard();
-
-            }
-
-        });
-    </script>
+    <script src="{{ asset('js/employee-form.js') }}"></script>
 @endpush

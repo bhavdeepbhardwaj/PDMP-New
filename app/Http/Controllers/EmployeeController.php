@@ -111,7 +111,12 @@ class EmployeeController extends Controller
 
             callback: fn() => view(
                 'employees.create',
-                $this->employeeService->getDropdownData()
+                array_merge(
+                    $this->employeeService->getDropdownData(),
+                    [
+                        'selectedPorts' => '',
+                    ]
+                )
             ),
 
             errorMessage: 'Unable to load employee form.',
@@ -156,11 +161,16 @@ class EmployeeController extends Controller
     public function show(
         User $employee
     ): View|RedirectResponse {
+
+        $employee->load('assignedPorts');
+
         return $this->execute(
 
             callback: fn() => view(
                 'employees.show',
-                compact('employee')
+                [
+                    'employee' => $employee,
+                ]
             ),
 
             errorMessage: 'Unable to load employee details.',
@@ -176,6 +186,9 @@ class EmployeeController extends Controller
     public function edit(
         User $employee
     ): View|RedirectResponse {
+
+        $employee->load('assignedPorts');
+
         return $this->execute(
 
             callback: function () use ($employee) {
@@ -185,7 +198,13 @@ class EmployeeController extends Controller
                     array_merge(
                         $this->employeeService
                             ->getDropdownData(),
-                        compact('employee')
+                        [
+                            'employee' => $employee,
+                            'selectedPorts' => $employee
+                                ->assignedPorts
+                                ->pluck('id')
+                                ->implode(','),
+                        ]
                     )
                 );
             },

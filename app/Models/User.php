@@ -157,6 +157,34 @@ class User extends Authenticatable
     }
 
     /**
+     * Assigned Ports
+     */
+    public function assignedPorts()
+    {
+        return $this->belongsToMany(
+
+            Port::class,
+
+            'user_ports',
+
+            'user_id',
+
+            'port_id'
+
+        )
+            ->withPivot([
+
+                'is_primary',
+
+                'status',
+
+                'is_deleted',
+
+            ])
+            ->withTimestamps();
+    }
+
+    /**
      * Reporting Officer Relationship
      */
     public function reportingOfficer()

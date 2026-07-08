@@ -15,9 +15,15 @@ return new class extends Migration
 
             $table->id();
 
-             $table->string('role_code',30)->unique();
+             $table->string('role_code',200)->unique();
 
             $table->string('role_name',200);
+
+             $table->string('access_scope', 30)
+                ->default('PORT');
+
+            $table->string('assignment_type', 30)
+                ->default('SINGLE');
 
             $table->text('description')->nullable();
 
