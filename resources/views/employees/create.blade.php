@@ -44,6 +44,36 @@
 
         @endif
 
+        @php
+            /*
+            |--------------------------------------------------------------------------
+            | Edit / Create Safe Values
+            |--------------------------------------------------------------------------
+            */
+
+            $oldPorts = old('ports');
+
+            if (is_array($oldPorts)) {
+                // Validation error ke baad submitted ports
+                $selectedPortsValue = implode(',', $oldPorts);
+            } elseif ($oldPorts !== null) {
+                // Single old value
+                $selectedPortsValue = $oldPorts;
+            } elseif (isset($employee)) {
+                // Edit mode - existing assigned ports
+                $selectedPortsValue = $employee->assignedPorts->pluck('id')->implode(',');
+            } else {
+                // Create mode
+                $selectedPortsValue = '';
+            }
+
+            $selectedStateBoardValue = old('state_board_id', $employee->state_board_id ?? '');
+
+            $selectedPortValue = old('port_id', $employee->port_id ?? '');
+
+            $selectedPortTypeValue = old('port_type_id', $employee->port_type_id ?? '');
+        @endphp
+
         {{-- Create Form --}}
         <form action="{{ route('employees.store') }}" method="POST" autocomplete="off">
 

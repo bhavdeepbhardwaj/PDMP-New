@@ -895,8 +895,8 @@ class PortSeeder extends Seeder
             */
             [
                 'port_type_id' => 2,
-                'state_id' => 13,
-                'state_board_id' => 0,
+                'state_id' => 19,
+                'state_board_id' => 13,
                 'port_name' => 'Lakshadweep',
                 'port_code' => 'LD101',
                 'port_data_code' => 'LD101',

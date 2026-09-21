@@ -1,5 +1,41 @@
 {{-- resources/views/employees/partials/form.blade.php --}}
 
+@php
+    /*
+    |--------------------------------------------------------------------------
+    | Employee Assignment Values
+    |--------------------------------------------------------------------------
+    */
+
+    $selectedPortTypeValue = old('port_type_id', $employee->port_type_id ?? '');
+
+    $selectedStateBoardValue = old('state_board_id', $employee->state_board_id ?? '');
+
+    $selectedPortValue = old('port_id', $employee->port_id ?? '');
+
+    /*
+    | Multiple ports
+    |
+    | Priority:
+    | 1. Validation old input
+    | 2. Controller $selectedPorts
+    | 3. Employee assignedPorts
+    */
+    $oldPorts = old('ports');
+
+    if (is_array($oldPorts)) {
+        $selectedPortsValue = implode(',', $oldPorts);
+    } elseif ($oldPorts !== null && $oldPorts !== '') {
+        $selectedPortsValue = $oldPorts;
+    } elseif (isset($selectedPorts) && $selectedPorts !== '') {
+        $selectedPortsValue = $selectedPorts;
+    } elseif (isset($employee)) {
+        $selectedPortsValue = $employee->assignedPorts->pluck('id')->implode(',');
+    } else {
+        $selectedPortsValue = '';
+    }
+@endphp
+
 <div class="card shadow-sm">
 
     <div class="card-header">
@@ -319,104 +355,99 @@
             {{-- Port Type --}}
             {{-- ========================================================= --}}
 
-            <div class="col-md-4 mb-3" id="port-type-wrapper">
-
+            <div class="col-md-4" id="port_type_wrapper">
                 <label for="port_type_id" class="form-label">
-                    Port Type <span class="text-danger">*</span>
+                    Port Type
+                    <span class="text-danger">*</span>
                 </label>
 
                 <select name="port_type_id" id="port_type_id"
                     class="form-select @error('port_type_id') is-invalid @enderror">
+                    <option value="">Please Select Port Type</option>
 
-                    <option value="">Select Port Type</option>
-
-                    <option value="1" @selected(old('port_type_id', $employee->port_type_id ?? '') == 1)>
-                        Major Port
+                    <option value="1" @selected((string) $selectedPortTypeValue === '1')>
+                        Major
                     </option>
 
-                    <option value="2" @selected(old('port_type_id', $employee->port_type_id ?? '') == 2)>
-                        Non Major Port
+                    <option value="2" @selected((string) $selectedPortTypeValue === '2')>
+                        Non-Major
                     </option>
-
                 </select>
 
                 @error('port_type_id')
-                    <small class="text-danger">{{ $message }}</small>
+                    <div class="invalid-feedback">
+                        {{ $message }}
+                    </div>
                 @enderror
-
             </div>
 
             {{-- ========================================================= --}}
             {{-- State Board --}}
             {{-- ========================================================= --}}
 
-            <div class="col-md-4 mb-3" id="state-board-wrapper">
-
+            <div class="col-md-4" id="state_board_wrapper">
                 <label for="state_board_id" class="form-label">
-                    State Board <span class="text-danger">*</span>
+                    State Board
+                    <span class="text-danger">*</span>
                 </label>
 
                 <select name="state_board_id" id="state_board_id"
                     class="form-select @error('state_board_id') is-invalid @enderror">
-
-                    <option value="">Select State Board</option>
-
+                    <option value="">Please Select State Board</option>
                 </select>
 
                 @error('state_board_id')
-                    <small class="text-danger">{{ $message }}</small>
+                    <div class="invalid-feedback">
+                        {{ $message }}
+                    </div>
                 @enderror
-
             </div>
 
             {{-- ========================================================= --}}
             {{-- Port --}}
             {{-- ========================================================= --}}
 
-            <div class="col-md-4 mb-3" id="port-wrapper">
-
+            <div class="col-md-4" id="port_wrapper">
                 <label for="port_id" class="form-label">
-                    Port <span class="text-danger">*</span>
+                    Port
+                    <span class="text-danger">*</span>
                 </label>
 
                 <select name="port_id" id="port_id" class="form-select @error('port_id') is-invalid @enderror">
-
-                    <option value="">Select Port</option>
-
+                    <option value="">Please Select Port</option>
                 </select>
 
                 @error('port_id')
-                    <small class="text-danger">{{ $message }}</small>
+                    <div class="invalid-feedback">
+                        {{ $message }}
+                    </div>
                 @enderror
-
             </div>
 
             {{-- ========================================================= --}}
             {{-- Multiple Ports --}}
             {{-- ========================================================= --}}
 
-            <div class="col-md-4 mb-3" id="multiple-port-wrapper" style="display:none;">
-
+            <div class="col-md-12" id="multiple_ports_wrapper">
                 <label for="ports" class="form-label">
-
-                    Assigned Ports
-
+                    Ports
                     <span class="text-danger">*</span>
-
                 </label>
 
-                <select name="ports[]" id="ports" class="form-select select2" multiple>
-
-                </select>
+                <select name="ports[]" id="ports" class="form-select @error('ports') is-invalid @enderror"
+                    multiple></select>
 
                 @error('ports')
-                    <small class="text-danger">
-
+                    <div class="invalid-feedback">
                         {{ $message }}
-
-                    </small>
+                    </div>
                 @enderror
 
+                @error('ports.*')
+                    <div class="invalid-feedback">
+                        {{ $message }}
+                    </div>
+                @enderror
             </div>
 
         </div>
@@ -468,20 +499,16 @@
     {{-- Hidden Values for AJAX Edit Mode --}}
     {{-- ========================================================= --}}
 
-    <input type="hidden" id="selected_state_board"
-        value="{{ old('state_board_id', $employee->state_board_id ?? '') }}">
+    <input type="hidden" id="selected_port_type" value="{{ old('port_type_id', $employee->port_type_id ?? '') }}">
 
-    <input type="hidden" id="selected_port" value="{{ old('port_id', $employee->port_id ?? '') }}">
+    <input type="hidden" id="selected_state_board" value="{{ $selectedStateBoardValue }}">
 
-    {{-- <input type="hidden" id="selected_ports"
-        value="{{ old('ports', isset($employee) ? $employee->assignedPorts->pluck('id')->implode(',') : '') }}"> --}}
+    <input type="hidden" id="selected_port" value="{{ $selectedPortValue }}">
 
-    <input type="hidden" id="selected_ports"
-        value="{{ is_array(old('ports')) ? implode(',', old('ports')) : old('selected_ports', $selectedPorts) }}">
+    <input type="hidden" id="selected_ports" value="{{ $selectedPortsValue }}">
 
 </div>
 
-</div>
 
 {{-- Contact Information --}}
 

@@ -26,37 +26,174 @@ use Illuminate\Support\Facades\Route;
 //     return 'Mail Sent';
 // });
 
+// Route::middleware([
+//     'auth',
+//     'employee.status',
+// ])
+//     ->prefix('employees')
+//     ->name('employees.')
+//     ->group(function () {
+
+//         /*
+//         |--------------------------------------------------------------------------
+//         | Employee Index
+//         |--------------------------------------------------------------------------
+//         */
+
+//         Route::get('/', [EmployeeController::class, 'index'])
+//             ->middleware(
+//                 'role.permission:' .
+//                     'SUPERADMIN,' .
+//                     'MINISTRY_NODAL_OFFICER,' .
+//                     'STATE_MARITIME_BOARD_NODAL_OFFICER,' .
+//                     'PORT_NODAL_OFFICER,' .
+//                     'PORT_MANAGER,' .
+//                     'DATA_ENTRY_OFFICER,' .
+//                     'NIC'
+//             )
+//             ->name('index');
+
+
+//         /*
+//         |--------------------------------------------------------------------------
+//         | Create
+//         |--------------------------------------------------------------------------
+//         */
+
+//         Route::get('/create', [EmployeeController::class, 'create'])
+//          ->middleware('role.permission:SUPERADMIN')
+//             ->name('create');
+
+//         Route::post('/', [EmployeeController::class, 'store'])
+//          ->middleware('role.permission:SUPERADMIN')
+//             ->name('store');
+
+
+//         /*
+//         |--------------------------------------------------------------------------
+//         | Employee Record
+//         |--------------------------------------------------------------------------
+//         */
+
+//         Route::get('/{employee}', [EmployeeController::class, 'show'])
+//             ->middleware('user.access:employee')
+//             ->name('show');
+
+//         Route::get('/{employee}/edit', [EmployeeController::class, 'edit'])
+//             ->middleware('user.access:employee')
+//             ->name('edit');
+
+//         Route::put('/{employee}', [EmployeeController::class, 'update'])
+//             ->middleware('user.access:employee')
+//             ->name('update');
+
+//         Route::delete('/{employee}', [EmployeeController::class, 'destroy'])
+//             ->middleware('user.access:employee')
+//             ->name('destroy');
+
+//         Route::patch('/{employee}/status', [EmployeeController::class, 'changeStatus'])
+//             ->middleware('user.access:employee')
+//             ->name('status');
+//     });
+
 Route::middleware([
     'auth',
     'employee.status',
-])->prefix('employees')
+])
+    ->prefix('employees')
     ->name('employees.')
     ->group(function () {
 
+        /*
+    |--------------------------------------------------------------------------
+    | Employee Listing - VIEW
+    |--------------------------------------------------------------------------
+    */
+
         Route::get('/', [EmployeeController::class, 'index'])
+            ->middleware(
+                'role.permission:' .
+                    'SUPERADMIN,' .
+                    'MINISTRY_NODAL_OFFICER,' .
+                    'STATE_MARITIME_BOARD_NODAL_OFFICER,' .
+                    'PORT_NODAL_OFFICER,' .
+                    'PORT_MANAGER,' .
+                    'DATA_ENTRY_OFFICER,' .
+                    'NIC'
+            )
             ->name('index');
 
+
+        /*
+    |--------------------------------------------------------------------------
+    | Create - SUPERADMIN ONLY
+    |--------------------------------------------------------------------------
+    */
+
         Route::get('/create', [EmployeeController::class, 'create'])
+            ->middleware('role.permission:SUPERADMIN')
             ->name('create');
 
         Route::post('/', [EmployeeController::class, 'store'])
+            ->middleware('role.permission:SUPERADMIN')
             ->name('store');
 
+
+        /*
+    |--------------------------------------------------------------------------
+    | Show - Scope Based
+    |--------------------------------------------------------------------------
+    */
+
         Route::get('/{employee}', [EmployeeController::class, 'show'])
+            ->middleware('user.access:employee')
             ->name('show');
 
+
+        /*
+    |--------------------------------------------------------------------------
+    | Edit - SUPERADMIN OR SELF
+    |--------------------------------------------------------------------------
+    */
+
         Route::get('/{employee}/edit', [EmployeeController::class, 'edit'])
+            ->middleware('employee.action:edit')
             ->name('edit');
 
+
+        /*
+    |--------------------------------------------------------------------------
+    | Update - SUPERADMIN OR SELF
+    |--------------------------------------------------------------------------
+    */
+
         Route::put('/{employee}', [EmployeeController::class, 'update'])
+            ->middleware('employee.action:update')
             ->name('update');
 
+
+        /*
+    |--------------------------------------------------------------------------
+    | Delete - SUPERADMIN ONLY
+    |--------------------------------------------------------------------------
+    */
+
         Route::delete('/{employee}', [EmployeeController::class, 'destroy'])
+            ->middleware('role.permission:SUPERADMIN')
             ->name('destroy');
 
+
+        /*
+    |--------------------------------------------------------------------------
+    | Change Status - SUPERADMIN ONLY
+    |--------------------------------------------------------------------------
+    */
+
         Route::patch('/{employee}/status', [EmployeeController::class, 'changeStatus'])
+            ->middleware('role.permission:SUPERADMIN')
             ->name('status');
     });
+
 
 
 Route::middleware([

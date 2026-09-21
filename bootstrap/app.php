@@ -18,6 +18,12 @@ return Application::configure(basePath: dirname(__DIR__))
 
             'force.password' => \App\Http\Middleware\ForcePasswordChange::class,
 
+            'role.permission' => \App\Http\Middleware\RolePermission::class,
+
+            'user.access' => \App\Http\Middleware\UserAccessMiddleware::class,
+
+            'employee.action' => \App\Http\Middleware\EmployeeActionMiddleware::class,
+
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
