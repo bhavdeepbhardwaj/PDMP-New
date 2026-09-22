@@ -28,13 +28,20 @@
 
             <div class="col-md-6 text-end">
 
-                <a href="{{ route('employees.create') }}" class="btn btn-primary">
+                @php
+                    $currentUser = auth()->user();
 
-                    <i class="fa fa-plus"></i>
+                    $currentRole = strtoupper(trim((string) optional($currentUser?->role)->role_code));
 
-                    Add Employee
+                    $isSuperAdmin = $currentRole === 'SUPERADMIN';
+                @endphp
 
-                </a>
+                @if ($isSuperAdmin)
+                    <a href="{{ route('employees.create') }}" class="btn btn-primary">
+                        <i class="fa fa-plus"></i>
+                        Add Employee
+                    </a>
+                @endif
 
             </div>
 
@@ -512,7 +519,14 @@
 
                                     <td class="text-center">
 
+                                        @php
+                                            $canEditEmployee =
+                                                $isSuperAdmin || (int) $currentUser->id === (int) $employee->id;
+                                        @endphp
+
+                                        {{-- ========================================================= --}}
                                         {{-- View --}}
+                                        {{-- ========================================================= --}}
 
                                         <a href="{{ route('employees.show', $employee) }}" class="btn btn-sm btn-info"
                                             title="View Employee">
@@ -521,54 +535,71 @@
 
                                         </a>
 
+
+                                        {{-- ========================================================= --}}
                                         {{-- Edit --}}
+                                        {{-- ========================================================= --}}
 
-                                        <a href="{{ route('employees.edit', $employee) }}" class="btn btn-sm btn-warning"
-                                            title="Edit Employee">
+                                        @if ($canEditEmployee)
+                                            <a href="{{ route('employees.edit', $employee) }}"
+                                                class="btn btn-sm btn-warning" title="Edit Employee">
 
-                                            <i class="fa fa-edit"></i>
+                                                <i class="fa fa-edit"></i>
 
-                                        </a>
+                                            </a>
+                                        @endif
 
-                                        {{-- Status Toggle --}}
 
-                                        <form action="{{ route('employees.status', $employee) }}" method="POST"
-                                            class="d-inline" title="{{ $employee->status ? 'Deactivate' : 'Activate' }}">
+                                        {{-- ========================================================= --}}
+                                        {{-- Status --}}
+                                        {{-- Only SUPERADMIN --}}
+                                        {{-- ========================================================= --}}
 
-                                            @csrf
+                                        @if ($isSuperAdmin)
+                                            <form action="{{ route('employees.status', $employee) }}" method="POST"
+                                                class="d-inline"
+                                                title="{{ $employee->status ? 'Deactivate' : 'Activate' }}">
 
-                                            @method('PATCH')
+                                                @csrf
+                                                @method('PATCH')
 
-                                            <button type="submit"
-                                                class="btn btn-sm {{ $employee->status ? 'btn-secondary' : 'btn-success' }}"
-                                                title="Change Status">
+                                                <button type="submit"
+                                                    class="btn btn-sm {{ $employee->status ? 'btn-secondary' : 'btn-success' }}"
+                                                    title="Change Status">
 
-                                                @if ($employee->status)
-                                                    <i class="fa fa-toggle-on"></i>
-                                                @else
-                                                    <i class="fa fa-toggle-off"></i>
-                                                @endif
+                                                    @if ($employee->status)
+                                                        <i class="fa fa-toggle-on"></i>
+                                                    @else
+                                                        <i class="fa fa-toggle-off"></i>
+                                                    @endif
 
-                                            </button>
+                                                </button>
 
-                                        </form>
+                                            </form>
+                                        @endif
 
+
+                                        {{-- ========================================================= --}}
                                         {{-- Delete --}}
+                                        {{-- Only SUPERADMIN --}}
+                                        {{-- ========================================================= --}}
 
-                                        <form action="{{ route('employees.destroy', $employee) }}" method="POST"
-                                            class="d-inline delete-form" title="Delete Employee">
+                                        @if ($isSuperAdmin)
+                                            <form action="{{ route('employees.destroy', $employee) }}" method="POST"
+                                                class="d-inline delete-form" title="Delete Employee">
 
-                                            @csrf
+                                                @csrf
+                                                @method('DELETE')
 
-                                            @method('DELETE')
+                                                <button type="submit" class="btn btn-sm btn-danger"
+                                                    title="Delete Employee">
 
-                                            <button type="submit" class="btn btn-sm btn-danger">
+                                                    <i class="fa fa-trash"></i>
 
-                                                <i class="fa fa-trash"></i>
+                                                </button>
 
-                                            </button>
-
-                                        </form>
+                                            </form>
+                                        @endif
 
                                     </td>
 

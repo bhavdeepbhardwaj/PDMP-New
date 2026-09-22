@@ -27,12 +27,14 @@ class EmployeeService
     */
 
     private const SELF_UPDATE_FIELDS = [
+        'title',
         'first_name',
         'middle_name',
         'last_name',
         'email',
         'mobile_number',
         'username',
+        'official_address'
     ];
 
     protected MasterDataService $masterDataService;

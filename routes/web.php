@@ -1,13 +1,14 @@
 <?php
 
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\CaptchaController;
 use App\Http\Controllers\ChangePasswordController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\ForgotPasswordController;
 use App\Http\Controllers\MasterDataController;
-use Illuminate\Support\Facades\Mail;
 use App\Http\Controllers\ResetPasswordController;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -95,6 +96,10 @@ use Illuminate\Support\Facades\Route;
 //             ->middleware('user.access:employee')
 //             ->name('status');
 //     });
+
+
+Route::get('/captcha/image', [CaptchaController::class, 'image'])
+    ->name('captcha.image');
 
 Route::middleware([
     'auth',
@@ -381,12 +386,6 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->name('dashboard');
-
-    Route::get('/change-password', [AuthController::class, 'showChangePassword'])
-        ->name('password.change');
-
-    Route::post('/change-password', [AuthController::class, 'changePassword'])
-        ->name('password.update');
 
     Route::post('/logout', [AuthController::class, 'logout'])
         ->name('logout');

@@ -12,5 +12,7 @@ class LoginStatus
 
     public const FAILED_INACTIVE = 'Failed - Account Inactive';
 
+    public const FAILED_CAPTCHA = 'Failed - Wrong Captcha';
+
     public const PASSWORD_RESET_SUCCESS = 'Password Reset Successful';
 }

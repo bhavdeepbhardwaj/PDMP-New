@@ -27,13 +27,24 @@
 
             <div class="col-md-6 text-end">
 
-                <a href="{{ route('employees.edit', $employee) }}" class="btn btn-warning">
+                @php
+                    $currentUser = auth()->user();
 
-                    <i class="fa fa-edit"></i>
+                    $currentRole = strtoupper(trim((string) optional($currentUser?->role)->role_code));
 
-                    Edit
+                    $isSuperAdmin = $currentRole === 'SUPERADMIN';
 
-                </a>
+                    $isSelf = $currentUser && (int) $currentUser->id === (int) $employee->id;
+                @endphp
+
+                @if ($isSuperAdmin || $isSelf)
+                    <a href="{{ route('employees.edit', $employee) }}" class="btn btn-warning">
+
+                        <i class="fa fa-edit"></i>
+                        Edit
+
+                    </a>
+                @endif
 
                 <a href="{{ route('employees.index') }}" class="btn btn-secondary">
 

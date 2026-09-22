@@ -10,17 +10,39 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
+use App\Services\RsaLoginService;
 
 class LoginService
 {
+
+    public function __construct(
+        private readonly RsaLoginService $rsaLoginService
+    ) {
+    }
+
     /**
      * Authenticate Employee
      */
-    public function login(array $credentials, bool $remember, Request $request): array
-    {
+    public function login(
+        array $credentials,
+        bool $remember,
+        Request $request
+    ): array {
         try {
 
+            /*
+            |--------------------------------------------------------------------------
+            | Rate Limiting Key
+            |--------------------------------------------------------------------------
+            */
+
             $key = 'login|' . $request->ip() . '|' . $credentials['employee_code'];
+
+            /*
+            |--------------------------------------------------------------------------
+            | Rate Limit Check
+            |--------------------------------------------------------------------------
+            */
 
             if (RateLimiter::tooManyAttempts($key, 5)) {
 
@@ -32,12 +54,71 @@ class LoginService
                 ];
             }
 
+            /*
+            |--------------------------------------------------------------------------
+            | CAPTCHA Verification
+            |--------------------------------------------------------------------------
+            */
+
+            $sessionCaptcha = session('captcha_code');
+
+            $submittedCaptcha =
+                $credentials['captcha_code'] ?? '';
+
+            if (
+                empty($sessionCaptcha) ||
+                empty($submittedCaptcha) ||
+                ! hash_equals(
+                    strtolower($sessionCaptcha),
+                    strtolower($submittedCaptcha)
+                )
+            ) {
+
+                $this->saveLoginLog(
+                    null,
+                    $credentials['employee_code'],
+                    LoginStatus::FAILED_CAPTCHA,
+                    $request
+                );
+
+                session()->forget('captcha_code');
+
+                RateLimiter::hit($key, 900);
+
+                return [
+                    'status' => false,
+                    'message' => 'The CAPTCHA code does not match.',
+                ];
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Consume CAPTCHA
+            |--------------------------------------------------------------------------
+            */
+
+            session()->forget('captcha_code');
+
+            /*
+            |--------------------------------------------------------------------------
+            | Find Employee
+            |--------------------------------------------------------------------------
+            */
+
             $user = User::query()
-                ->where('employee_code', $credentials['employee_code'])
+                ->where(
+                    'employee_code',
+                    $credentials['employee_code']
+                )
                 ->first();
 
-            // Employee Not Found
-            if (!$user) {
+            /*
+            |--------------------------------------------------------------------------
+            | Employee Not Found
+            |--------------------------------------------------------------------------
+            */
+
+            if (! $user) {
 
                 $this->saveLoginLog(
                     null,
@@ -49,12 +130,17 @@ class LoginService
                 RateLimiter::hit($key, 900);
 
                 return [
-                    'status'  => false,
+                    'status' => false,
                     'message' => 'Invalid Employee Code or Password.',
                 ];
             }
 
-            // Account Inactive
+            /*
+            |--------------------------------------------------------------------------
+            | Account Inactive
+            |--------------------------------------------------------------------------
+            */
+
             if ((int) $user->status !== 1) {
 
                 $this->saveLoginLog(
@@ -67,13 +153,33 @@ class LoginService
                 RateLimiter::hit($key, 900);
 
                 return [
-                    'status'  => false,
+                    'status' => false,
                     'message' => 'Your account is inactive. Please contact administrator.',
                 ];
             }
 
-            // Password Verification
-            if (!Hash::check($credentials['password'], $user->password)) {
+            /*
+            |--------------------------------------------------------------------------
+            | RSA Password Decryption
+            |--------------------------------------------------------------------------
+            |
+            | The browser sends the password as RSA-OAEP encrypted
+            | Base64 data.
+            |
+            | Plain password exists only in server memory after
+            | successful decryption.
+            |
+            */
+
+            try {
+
+                $plainPassword = $this->rsaLoginService->decrypt(
+                    $credentials['password']
+                );
+
+            } catch (\Throwable $e) {
+
+                report($e);
 
                 $this->saveLoginLog(
                     $user->id,
@@ -85,21 +191,125 @@ class LoginService
                 RateLimiter::hit($key, 900);
 
                 return [
-                    'status'  => false,
+                    'status' => false,
                     'message' => 'Invalid Employee Code or Password.',
                 ];
             }
 
-            // Login
-            Auth::guard('web')->login($user, $remember);
+            /*
+            |--------------------------------------------------------------------------
+            | Password Verification
+            |--------------------------------------------------------------------------
+            |
+            | Supports:
+            |
+            | 1. Legacy BCrypt
+            | 2. Current Argon2id
+            |
+            */
 
-            // Prevent Session Fixation
+            $passwordValid = false;
+
+            try {
+
+                $passwordValid = $this->checkPassword(
+                    $plainPassword,
+                    $user->password
+                );
+
+            } catch (\Throwable $e) {
+
+                report($e);
+
+                $passwordValid = false;
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Invalid Password
+            |--------------------------------------------------------------------------
+            */
+
+            if (! $passwordValid) {
+
+                $this->saveLoginLog(
+                    $user->id,
+                    $user->employee_code,
+                    LoginStatus::FAILED_PASSWORD,
+                    $request
+                );
+
+                RateLimiter::hit($key, 900);
+
+                return [
+                    'status' => false,
+                    'message' => 'Invalid Employee Code or Password.',
+                ];
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Transparent BCrypt → Argon2id Migration
+            |--------------------------------------------------------------------------
+            */
+
+            if (
+                str_starts_with($user->password, '$2y$') ||
+                str_starts_with($user->password, '$2a$') ||
+                str_starts_with($user->password, '$2b$')
+            ) {
+
+                try {
+
+                    $user->forceFill([
+                        'password' => Hash::make($plainPassword),
+                    ])->save();
+
+                } catch (\Throwable $e) {
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Do not block a valid login if migration fails.
+                    |--------------------------------------------------------------------------
+                    */
+
+                    report($e);
+                }
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Login
+            |--------------------------------------------------------------------------
+            */
+
+            Auth::guard('web')->login(
+                $user,
+                $remember
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Prevent Session Fixation
+            |--------------------------------------------------------------------------
+            */
+
             $request->session()->regenerate();
 
-            // Clear Login Attempts
+            /*
+            |--------------------------------------------------------------------------
+            | Clear Login Attempts
+            |--------------------------------------------------------------------------
+            */
+
             RateLimiter::clear($key);
 
-            // Save Login Log
+            /*
+            |--------------------------------------------------------------------------
+            | Save Login Log
+            |--------------------------------------------------------------------------
+            */
+
             $this->saveLoginLog(
                 $user->id,
                 $user->employee_code,
@@ -107,38 +317,28 @@ class LoginService
                 $request
             );
 
-            // return [
+            /*
+            |--------------------------------------------------------------------------
+            | Response
+            |--------------------------------------------------------------------------
+            */
 
-            //     'status' => true,
-
-            //     'message' => 'Login Successful.',
-
-            //     'user' => $user,
-
-            //     'force_password_change' => (bool) $user->force_password_change,
-
-            // ];
             return ServiceResponse::success(
-
                 LoginStatus::SUCCESS,
-
                 [
                     'user' => $user,
-                    'force_password_change' => (bool)$user->force_password_change
-
+                    'force_password_change' =>
+                        (bool) $user->force_password_change,
                 ]
-
             );
+
         } catch (\Throwable $e) {
 
             report($e);
 
             return [
-
                 'status' => false,
-
                 'message' => 'Something went wrong. Please try again.',
-
             ];
         }
     }
@@ -148,7 +348,7 @@ class LoginService
      */
     public function logout(Request $request): void
     {
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             return;
         }
 
@@ -159,6 +359,65 @@ class LoginService
         $request->session()->invalidate();
 
         $request->session()->regenerateToken();
+    }
+
+    /**
+     * Verify Password
+     *
+     * Supports BCrypt and Argon2id.
+     */
+    private function checkPassword(
+        string $plainPassword,
+        string $storedHash
+    ): bool {
+
+        /*
+        |--------------------------------------------------------------------------
+        | Legacy BCrypt
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            str_starts_with($storedHash, '$2y$') ||
+            str_starts_with($storedHash, '$2a$') ||
+            str_starts_with($storedHash, '$2b$')
+        ) {
+
+            return Hash::driver('bcrypt')->check(
+                $plainPassword,
+                $storedHash
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Argon2id
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            str_starts_with($storedHash, '$argon2id$')
+        ) {
+
+            return Hash::check(
+                $plainPassword,
+                $storedHash
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Unknown Hash Algorithm
+        |--------------------------------------------------------------------------
+        */
+
+        report(
+            new \RuntimeException(
+                'Unsupported password hash algorithm.'
+            )
+        );
+
+        return false;
     }
 
     /**
@@ -174,23 +433,22 @@ class LoginService
         try {
 
             LoginLog::create([
-
-                'user_id'       => $userId,
-
+                'user_id' => $userId,
                 'employee_code' => $employeeCode,
-
-                'ip_address'    => $request->ip(),
-
-                'user_agent'    => $request->userAgent(),
-
-                'status'        => $status,
-
-                'login_at'      => now(),
-
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+                'status' => $status,
+                'login_at' => now(),
             ]);
+
         } catch (\Throwable $e) {
 
-            // Logging failure should never stop authentication
+            /*
+            |--------------------------------------------------------------------------
+            | Logging failure should never stop authentication
+            |--------------------------------------------------------------------------
+            */
+
             report($e);
         }
     }
@@ -202,16 +460,21 @@ class LoginService
     {
         try {
 
-            $log = LoginLog::where('user_id', $userId)
+            $log = LoginLog::where(
+                'user_id',
+                $userId
+            )
                 ->whereNull('logout_at')
                 ->latest()
                 ->first();
 
             if ($log) {
+
                 $log->update([
                     'logout_at' => now(),
                 ]);
             }
+
         } catch (\Throwable $e) {
 
             report($e);

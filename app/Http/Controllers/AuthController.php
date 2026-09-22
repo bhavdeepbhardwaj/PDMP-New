@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Http\Requests\LoginRequest;
 use App\Services\LoginService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
@@ -18,7 +17,26 @@ class AuthController extends Controller
      */
     public function index()
     {
-        return view('auth.login');
+        $publicKeyPath = config('rsa.login.public_key');
+
+        if (! is_file($publicKeyPath)) {
+            report(
+                new \RuntimeException(
+                    'Login RSA public key not found.'
+                )
+            );
+
+            abort(
+                500,
+                'Login security configuration error.'
+            );
+        }
+
+        $rsaPublicKey = file_get_contents($publicKeyPath);
+
+        return view('auth.login', [
+            'rsaPublicKey' => $rsaPublicKey,
+        ]);
     }
 
     /**
@@ -27,16 +45,16 @@ class AuthController extends Controller
     public function login(LoginRequest $request)
     {
         $result = $this->loginService->login(
-            $request->only('employee_code', 'password'),
+            $request->only('employee_code', 'password', 'captcha_code'),
             $request->boolean('remember'),
             $request
         );
 
-        if (!$result['status']) {
+        if (! $result['status']) {
             return back()
                 ->withInput($request->except('password'))
                 ->withErrors([
-                    'employee_code' => $result['message']
+                    'employee_code' => $result['message'],
                 ]);
         }
 
@@ -63,28 +81,5 @@ class AuthController extends Controller
     public function showChangePassword()
     {
         return view('auth.change-password');
-    }
-
-    public function changePassword(Request $request)
-    {
-        $request->validate([
-            'password' => [
-                'required',
-                'confirmed',
-                'min:8'
-            ],
-        ]);
-
-        $user = auth()->user();
-
-        $user->update([
-            'password' => Hash::make($request->password),
-            'force_password_change' => 0,
-            'password_changed_at' => now(),
-        ]);
-
-        return redirect()
-            ->route('dashboard')
-            ->with('success', 'Password changed successfully.');
     }
 }

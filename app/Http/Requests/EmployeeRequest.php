@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\Role;
 use App\Models\Port;
+use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -14,7 +15,67 @@ class EmployeeRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        return auth()->check();
+    }
+
+    /**
+     * Is this a new employee creation request?
+     */
+    private function isCreateRequest(): bool
+    {
+        return $this->isMethod('post');
+    }
+
+    /**
+     * Get employee from route model binding.
+     */
+    private function routeEmployee(): ?User
+    {
+        $employee = $this->route('employee');
+
+        if ($employee instanceof User) {
+            return $employee;
+        }
+
+        if (is_numeric($employee)) {
+            return User::query()
+                ->whereKey($employee)
+                ->first();
+        }
+
+        return null;
+    }
+
+    /**
+     * Is current logged-in user updating himself?
+     */
+    private function isSelfUpdate(): bool
+    {
+        if ($this->isCreateRequest()) {
+            return false;
+        }
+
+        $employee = $this->routeEmployee();
+        $user = auth()->user();
+
+        return $employee
+            && $user
+            && (int) $employee->id === (int) $user->id;
+    }
+
+    /**
+     * Is current user SUPERADMIN?
+     */
+    private function isSuperAdmin(): bool
+    {
+        $user = auth()->user();
+
+        return $user
+            && strtoupper(
+                trim(
+                    (string) optional($user->role)->role_code
+                )
+            ) === 'SUPERADMIN';
     }
 
     /**
@@ -22,9 +83,77 @@ class EmployeeRequest extends FormRequest
      */
     public function rules(): array
     {
-        $userId = $this->route('employee')?->id
-            ?? $this->route('user')?->id
-            ?? null;
+        /*
+        |--------------------------------------------------------------------------
+        | SELF UPDATE
+        |--------------------------------------------------------------------------
+        |
+        | Non-SUPERADMIN can update only personal/profile information.
+        |
+        */
+        if ($this->isSelfUpdate() && !$this->isSuperAdmin()) {
+
+            return [
+                'title' => [
+                    'required',
+                    'string',
+                    'max:20',
+                ],
+
+                'first_name' => [
+                    'required',
+                    'string',
+                    'max:100',
+                ],
+
+                'middle_name' => [
+                    'nullable',
+                    'string',
+                    'max:100',
+                ],
+
+                'last_name' => [
+                    'nullable',
+                    'string',
+                    'max:100',
+                ],
+
+                'email' => [
+                    'required',
+                    'email',
+                    'max:255',
+                    Rule::unique('users', 'email')
+                        ->ignore($this->routeEmployee()?->id),
+                ],
+
+                'username' => [
+                    'required',
+                    'string',
+                    'max:100',
+                    Rule::unique('users', 'username')
+                        ->ignore($this->routeEmployee()?->id),
+                ],
+
+                'mobile_number' => [
+                    'nullable',
+                    'string',
+                    'max:20',
+                ],
+
+                'official_address' => [
+                    'nullable',
+                    'string',
+                ],
+            ];
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | CREATE / SUPERADMIN UPDATE
+        |--------------------------------------------------------------------------
+        */
+
+        $userId = $this->routeEmployee()?->id;
 
         return [
             /*
@@ -32,11 +161,13 @@ class EmployeeRequest extends FormRequest
             | Employee Information
             |--------------------------------------------------------------------------
             */
+
             'employee_code' => [
                 'nullable',
                 'string',
                 'max:50',
-                Rule::unique('users', 'employee_code')->ignore($userId),
+                Rule::unique('users', 'employee_code')
+                    ->ignore($userId),
             ],
 
             'title' => [
@@ -68,6 +199,7 @@ class EmployeeRequest extends FormRequest
             | Organization
             |--------------------------------------------------------------------------
             */
+
             'organization_id' => [
                 'required',
                 'integer',
@@ -96,11 +228,8 @@ class EmployeeRequest extends FormRequest
             |--------------------------------------------------------------------------
             | Port Assignment
             |--------------------------------------------------------------------------
-            |
-            | These fields are conditionally validated inside withValidator()
-            | according to Role access_scope / assignment_type.
-            |
             */
+
             'port_type_id' => [
                 'nullable',
                 'integer',
@@ -135,6 +264,7 @@ class EmployeeRequest extends FormRequest
             | Other Information
             |--------------------------------------------------------------------------
             */
+
             'report_to_user_id' => [
                 'required',
                 'integer',
@@ -150,14 +280,16 @@ class EmployeeRequest extends FormRequest
                 'required',
                 'email',
                 'max:255',
-                Rule::unique('users', 'email')->ignore($userId),
+                Rule::unique('users', 'email')
+                    ->ignore($userId),
             ],
 
             'username' => [
                 'required',
                 'string',
                 'max:100',
-                Rule::unique('users', 'username')->ignore($userId),
+                Rule::unique('users', 'username')
+                    ->ignore($userId),
             ],
 
             'mobile_number' => [
@@ -176,8 +308,12 @@ class EmployeeRequest extends FormRequest
             | Password
             |--------------------------------------------------------------------------
             */
+
             'password' => [
-                $this->isMethod('post') ? 'required' : 'nullable',
+                $this->isCreateRequest()
+                    ? 'required'
+                    : 'nullable',
+
                 'string',
                 'min:8',
                 'confirmed',
@@ -194,26 +330,43 @@ class EmployeeRequest extends FormRequest
      */
     public function withValidator($validator): void
     {
+        /*
+        |--------------------------------------------------------------------------
+        | Self Update
+        |--------------------------------------------------------------------------
+        |
+        | No role/port/status/assignment validation.
+        |
+        */
+        if (
+            $this->isSelfUpdate()
+            && !$this->isSuperAdmin()
+        ) {
+            return;
+        }
+
         $validator->after(function ($validator) {
 
-            /*
-            |--------------------------------------------------------------------------
-            | Get Role
-            |--------------------------------------------------------------------------
-            */
             $roleId = $this->input('role_id');
 
             if (!$roleId) {
                 return;
             }
 
+            /*
+            |--------------------------------------------------------------------------
+            | Validate Role
+            |--------------------------------------------------------------------------
+            */
+
             $role = Role::query()
-                ->where('id', $roleId)
+                ->whereKey($roleId)
                 ->where('status', true)
                 ->where('is_deleted', false)
                 ->first();
 
             if (!$role) {
+
                 $validator->errors()->add(
                     'role_id',
                     'Selected role is invalid or inactive.'
@@ -222,58 +375,45 @@ class EmployeeRequest extends FormRequest
                 return;
             }
 
-            $accessScope = strtoupper((string) $role->access_scope);
-            $assignmentType = strtoupper((string) $role->assignment_type);
+            $accessScope = strtoupper(
+                trim((string) $role->access_scope)
+            );
+
+            $assignmentType = strtoupper(
+                trim((string) $role->assignment_type)
+            );
 
             $portTypeId = $this->input('port_type_id');
             $stateBoardId = $this->input('state_board_id');
             $portId = $this->input('port_id');
 
-            $ports = collect($this->input('ports', []))
+            $ports = collect(
+                $this->input('ports', [])
+            )
                 ->filter(fn($id) => filled($id))
                 ->map(fn($id) => (int) $id)
                 ->unique()
                 ->values()
                 ->all();
 
-
             /*
             |--------------------------------------------------------------------------
-            | 1. ALL ACCESS
+            | ALL ACCESS
             |--------------------------------------------------------------------------
-            |
-            | SUPERADMIN / MINISTRY_NODAL_OFFICER
-            |
-            | No concrete Port Type / State Board / Port assignment required.
-            |
             */
-            if ($accessScope === Role::ACCESS_ALL) {
 
-                // Nothing to validate regarding port assignment.
+            if ($accessScope === Role::ACCESS_ALL) {
                 return;
             }
 
-
             /*
             |--------------------------------------------------------------------------
-            | 2. STATE BOARD ACCESS
+            | STATE BOARD ACCESS
             |--------------------------------------------------------------------------
-            |
-            | STATE_MARITIME_BOARD_NODAL_OFFICER
-            |
-            | Required:
-            | - Non-Major Port Type
-            | - State Board
-            | - Multiple Ports
-            |
             */
+
             if ($accessScope === Role::ACCESS_STATE_BOARD) {
 
-                /*
-                |--------------------------------------------------------------------------
-                | Port Type must be Non-Major
-                |--------------------------------------------------------------------------
-                */
                 if ((int) $portTypeId !== 2) {
 
                     $validator->errors()->add(
@@ -282,11 +422,6 @@ class EmployeeRequest extends FormRequest
                     );
                 }
 
-                /*
-                |--------------------------------------------------------------------------
-                | State Board required
-                |--------------------------------------------------------------------------
-                */
                 if (!$stateBoardId) {
 
                     $validator->errors()->add(
@@ -295,12 +430,10 @@ class EmployeeRequest extends FormRequest
                     );
                 }
 
-                /*
-                |--------------------------------------------------------------------------
-                | Multiple Ports required
-                |--------------------------------------------------------------------------
-                */
-                if ($assignmentType !== Role::ASSIGN_MULTIPLE) {
+                if (
+                    $assignmentType
+                    !== Role::ASSIGN_MULTIPLE
+                ) {
 
                     $validator->errors()->add(
                         'role_id',
@@ -318,11 +451,6 @@ class EmployeeRequest extends FormRequest
                     return;
                 }
 
-                /*
-                |--------------------------------------------------------------------------
-                | Multiple Port Relationship Validation
-                |--------------------------------------------------------------------------
-                */
                 $this->validatePortRelationships(
                     validator: $validator,
                     portIds: $ports,
@@ -333,30 +461,18 @@ class EmployeeRequest extends FormRequest
                 return;
             }
 
-
             /*
             |--------------------------------------------------------------------------
-            | 3. PORT ACCESS
+            | PORT ACCESS
             |--------------------------------------------------------------------------
-            |
-            | PORT_NODAL_OFFICER
-            | PORT_MANAGER
-            | DATA_ENTRY_OFFICER
-            |
-            | Required:
-            | - Single Port
-            | - Port must belong to selected Port Type
-            | - For Non-Major, Port must belong to selected State Board
-            |
             */
+
             if ($accessScope === Role::ACCESS_PORT) {
 
-                /*
-                |--------------------------------------------------------------------------
-                | Assignment must be SINGLE
-                |--------------------------------------------------------------------------
-                */
-                if ($assignmentType !== Role::ASSIGN_SINGLE) {
+                if (
+                    $assignmentType
+                    !== Role::ASSIGN_SINGLE
+                ) {
 
                     $validator->errors()->add(
                         'role_id',
@@ -364,11 +480,6 @@ class EmployeeRequest extends FormRequest
                     );
                 }
 
-                /*
-                |--------------------------------------------------------------------------
-                | Port Type required
-                |--------------------------------------------------------------------------
-                */
                 if (!$portTypeId) {
 
                     $validator->errors()->add(
@@ -377,11 +488,6 @@ class EmployeeRequest extends FormRequest
                     );
                 }
 
-                /*
-                |--------------------------------------------------------------------------
-                | Port required
-                |--------------------------------------------------------------------------
-                */
                 if (!$portId) {
 
                     $validator->errors()->add(
@@ -392,12 +498,10 @@ class EmployeeRequest extends FormRequest
                     return;
                 }
 
-                /*
-                |--------------------------------------------------------------------------
-                | Non-Major requires State Board
-                |--------------------------------------------------------------------------
-                */
-                if ((int) $portTypeId === 2 && !$stateBoardId) {
+                if (
+                    (int) $portTypeId === 2
+                    && !$stateBoardId
+                ) {
 
                     $validator->errors()->add(
                         'state_board_id',
@@ -407,20 +511,6 @@ class EmployeeRequest extends FormRequest
                     return;
                 }
 
-                /*
-                |--------------------------------------------------------------------------
-                | Major -> State Board must not be supplied
-                |--------------------------------------------------------------------------
-                */
-                if ((int) $portTypeId === 1) {
-                    $stateBoardId = null;
-                }
-
-                /*
-                |--------------------------------------------------------------------------
-                | Single Port Relationship Validation
-                |--------------------------------------------------------------------------
-                */
                 $this->validatePortRelationships(
                     validator: $validator,
                     portIds: [$portId],
@@ -431,12 +521,12 @@ class EmployeeRequest extends FormRequest
                 return;
             }
 
-
             /*
             |--------------------------------------------------------------------------
-            | Unknown Access Scope
+            | Invalid Scope
             |--------------------------------------------------------------------------
             */
+
             $validator->errors()->add(
                 'role_id',
                 'The selected role has an invalid access scope.'
@@ -444,16 +534,8 @@ class EmployeeRequest extends FormRequest
         });
     }
 
-
     /**
      * Validate Port relationships.
-     *
-     * Rules:
-     * - Port must exist
-     * - Port must be active
-     * - Port must not be deleted
-     * - Port Type must match selected Port Type
-     * - Non-Major Port must belong to selected State Board
      */
     private function validatePortRelationships(
         $validator,
@@ -475,9 +557,10 @@ class EmployeeRequest extends FormRequest
 
         /*
         |--------------------------------------------------------------------------
-        | Fetch only active + non-deleted Ports
+        | Fetch active Ports
         |--------------------------------------------------------------------------
         */
+
         $ports = Port::query()
             ->whereIn('id', $portIds)
             ->where('status', true)
@@ -490,9 +573,10 @@ class EmployeeRequest extends FormRequest
 
         /*
         |--------------------------------------------------------------------------
-        | Check all selected Ports exist and are active
+        | Validate existence/status
         |--------------------------------------------------------------------------
         */
+
         if ($ports->count() !== count($portIds)) {
 
             $validator->errors()->add(
@@ -500,9 +584,6 @@ class EmployeeRequest extends FormRequest
                 'One or more selected Ports are invalid, inactive, or deleted.'
             );
 
-            /*
-            | For single Port validation also attach error to port_id.
-            */
             if (count($portIds) === 1) {
 
                 $validator->errors()->add(
@@ -516,12 +597,17 @@ class EmployeeRequest extends FormRequest
 
         /*
         |--------------------------------------------------------------------------
-        | Validate Port Type relationship
+        | Validate Port Type
         |--------------------------------------------------------------------------
         */
-        $invalidPortType = $ports->contains(function ($port) use ($portTypeId) {
-            return (int) $port->port_type_id !== (int) $portTypeId;
-        });
+
+        $invalidPortType = $ports->contains(
+            function ($port) use ($portTypeId) {
+
+                return (int) $port->port_type_id
+                    !== (int) $portTypeId;
+            }
+        );
 
         if ($invalidPortType) {
 
@@ -541,21 +627,23 @@ class EmployeeRequest extends FormRequest
 
         /*
         |--------------------------------------------------------------------------
-        | State Board relationship
+        | Validate State Board
         |--------------------------------------------------------------------------
-        |
-        | Only Non-Major Port Type requires State Board relationship.
-        |
         */
+
         if ((int) $portTypeId === 2) {
 
             if (!$stateBoardId) {
                 return;
             }
 
-            $invalidStateBoard = $ports->contains(function ($port) use ($stateBoardId) {
-                return (int) $port->state_board_id !== (int) $stateBoardId;
-            });
+            $invalidStateBoard = $ports->contains(
+                function ($port) use ($stateBoardId) {
+
+                    return (int) $port->state_board_id
+                        !== (int) $stateBoardId;
+                }
+            );
 
             if ($invalidStateBoard) {
 
@@ -572,24 +660,6 @@ class EmployeeRequest extends FormRequest
                     );
                 }
             }
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Major Port must not have State Board relationship
-        |--------------------------------------------------------------------------
-        */
-        if ((int) $portTypeId === 1) {
-
-            $hasStateBoard = $ports->contains(function ($port) {
-                return !is_null($port->state_board_id);
-            });
-
-            /*
-            | We don't reject based solely on the DB value here because
-            | the authoritative rule is Port Type = Major.
-            | The selected Port Type relationship has already been validated.
-            */
         }
     }
 }

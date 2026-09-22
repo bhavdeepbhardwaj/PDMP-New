@@ -1,4 +1,38 @@
 {{-- resources/views/employees/partials/form.blade.php --}}
+@php
+    /*
+    |--------------------------------------------------------------------------
+    | Authorization
+    |--------------------------------------------------------------------------
+    */
+
+    $currentUser = auth()->user();
+
+    $currentRole = strtoupper(trim((string) optional($currentUser?->role)->role_code));
+
+    $isSuperAdmin = $currentRole === 'SUPERADMIN';
+
+    $isEditMode = isset($employee);
+
+    $isSelf = $isEditMode && $currentUser && (int) $currentUser->id === (int) $employee->id;
+
+    /*
+    |--------------------------------------------------------------------------
+    | Profile fields
+    |--------------------------------------------------------------------------
+    |
+    | SUPERADMIN:
+    | Full access
+    |
+    | Other roles:
+    | Only own profile
+    |
+    */
+
+    $canEditAdministrativeFields = $isSuperAdmin;
+
+    $canEditProfile = !$isEditMode || $isSuperAdmin || $isSelf;
+@endphp
 
 @php
     /*
@@ -233,265 +267,295 @@
 
         <div class="row">
 
-            {{-- Organization --}}
-            <div class="col-md-4 mb-3">
+            @if ($canEditAdministrativeFields)
 
-                <label class="form-label">Organization <span class="text-danger">*</span></label>
+                <div class="row">
 
-                <select name="organization_id" class="form-select">
+                    {{-- ========================================================= --}}
+                    {{-- Organization --}}
+                    {{-- ========================================================= --}}
 
-                    <option value="">Select</option>
+                    <div class="col-md-4 mb-3">
 
-                    @foreach ($organizations as $organization)
-                        <option value="{{ $organization->id }}" @selected(old('organization_id', $employee->organization_id ?? '') == $organization->id)>
+                        <label class="form-label">
+                            Organization <span class="text-danger">*</span>
+                        </label>
 
-                            {{ $organization->organization_name }}
+                        <select name="organization_id" class="form-select">
 
-                        </option>
-                    @endforeach
+                            <option value="">Select</option>
 
-                </select>
+                            @foreach ($organizations as $organization)
+                                <option value="{{ $organization->id }}" @selected(old('organization_id', $employee->organization_id ?? '') == $organization->id)>
 
-                @error('organization_id')
-                    <small class="text-danger">{{ $message }}</small>
-                @enderror
+                                    {{ $organization->organization_name }}
 
-            </div>
+                                </option>
+                            @endforeach
 
-            {{-- Department --}}
-            <div class="col-md-4 mb-3">
+                        </select>
 
-                <label class="form-label">Department <span class="text-danger">*</span></label>
+                        @error('organization_id')
+                            <small class="text-danger">{{ $message }}</small>
+                        @enderror
 
-                <select name="department_id" class="form-select">
+                    </div>
 
-                    <option value="">Select</option>
 
-                    @foreach ($departments as $department)
-                        <option value="{{ $department->id }}" @selected(old('department_id', $employee->department_id ?? '') == $department->id)>
+                    {{-- ========================================================= --}}
+                    {{-- Department --}}
+                    {{-- ========================================================= --}}
 
-                            {{ $department->department_name }}
+                    <div class="col-md-4 mb-3">
 
-                        </option>
-                    @endforeach
+                        <label class="form-label">
+                            Department <span class="text-danger">*</span>
+                        </label>
 
-                </select>
+                        <select name="department_id" class="form-select">
 
-                @error('department_id')
-                    <small class="text-danger">{{ $message }}</small>
-                @enderror
+                            <option value="">Select</option>
 
-            </div>
+                            @foreach ($departments as $department)
+                                <option value="{{ $department->id }}" @selected(old('department_id', $employee->department_id ?? '') == $department->id)>
 
-            {{-- Role --}}
-            <div class="col-md-4 mb-3">
+                                    {{ $department->department_name }}
 
-                <label class="form-label">Role <span class="text-danger">*</span></label>
+                                </option>
+                            @endforeach
 
-                <select name="role_id" id="role_id" class="form-select">
+                        </select>
 
-                    <option value="">
-                        Select Role
-                    </option>
+                        @error('department_id')
+                            <small class="text-danger">{{ $message }}</small>
+                        @enderror
 
-                    @foreach ($roles as $role)
-                        <option value="{{ $role->id }}" data-access-scope="{{ $role->access_scope }}"
-                            data-assignment-type="{{ $role->assignment_type }}" @selected(old('role_id', $employee->role_id ?? '') == $role->id)>
+                    </div>
 
-                            {{ $role->role_name }}
 
-                        </option>
-                    @endforeach
+                    {{-- ========================================================= --}}
+                    {{-- Role --}}
+                    {{-- ========================================================= --}}
 
-                </select>
+                    <div class="col-md-4 mb-3">
 
-                @error('role_id')
-                    <small class="text-danger">{{ $message }}</small>
-                @enderror
+                        <label class="form-label">
+                            Role <span class="text-danger">*</span>
+                        </label>
 
-            </div>
+                        <select name="role_id" id="role_id" class="form-select">
+
+                            <option value="">Select Role</option>
+
+                            @foreach ($roles as $role)
+                                <option value="{{ $role->id }}" data-access-scope="{{ $role->access_scope }}"
+                                    data-assignment-type="{{ $role->assignment_type }}" @selected(old('role_id', $employee->role_id ?? '') == $role->id)>
+
+                                    {{ $role->role_name }}
+
+                                </option>
+                            @endforeach
+
+                        </select>
+
+                        @error('role_id')
+                            <small class="text-danger">{{ $message }}</small>
+                        @enderror
+
+                    </div>
+
+                </div>
+
+            @endif
 
         </div>
 
         <div class="row">
 
-            {{-- ========================================================= --}}
-            {{-- State --}}
-            {{-- ========================================================= --}}
+            @if ($canEditAdministrativeFields)
 
-            <div class="col-md-3 mb-3">
+                {{-- ========================================================= --}}
+                {{-- State --}}
+                {{-- ========================================================= --}}
 
-                <label for="state_id" class="form-label">
+                <div class="col-md-3 mb-3">
 
-                    State <span class="text-danger">*</span>
+                    <label for="state_id" class="form-label">
 
-                </label>
+                        State <span class="text-danger">*</span>
 
-                <select name="state_id" id="state_id" class="form-select @error('state_id') is-invalid @enderror">
+                    </label>
 
-                    <option value="">Select State</option>
+                    <select name="state_id" id="state_id"
+                        class="form-select @error('state_id') is-invalid @enderror">
 
-                    @foreach ($states as $state)
-                        <option value="{{ $state->id }}" @selected(old('state_id', $employee->state_id ?? '') == $state->id)>
+                        <option value="">Select State</option>
 
-                            {{ $state->state_name }}
+                        @foreach ($states as $state)
+                            <option value="{{ $state->id }}" @selected(old('state_id', $employee->state_id ?? '') == $state->id)>
 
+                                {{ $state->state_name }}
+
+                            </option>
+                        @endforeach
+
+                    </select>
+
+                    @error('state_id')
+                        <small class="text-danger">
+
+                            {{ $message }}
+
+                        </small>
+                    @enderror
+
+                </div>
+
+                {{-- ========================================================= --}}
+                {{-- Port Type --}}
+                {{-- ========================================================= --}}
+
+                <div class="col-md-4" id="port_type_wrapper">
+                    <label for="port_type_id" class="form-label">
+                        Port Type
+                        <span class="text-danger">*</span>
+                    </label>
+
+                    <select name="port_type_id" id="port_type_id"
+                        class="form-select @error('port_type_id') is-invalid @enderror">
+                        <option value="">Please Select Port Type</option>
+
+                        <option value="1" @selected((string) $selectedPortTypeValue === '1')>
+                            Major
                         </option>
-                    @endforeach
 
-                </select>
+                        <option value="2" @selected((string) $selectedPortTypeValue === '2')>
+                            Non-Major
+                        </option>
+                    </select>
 
-                @error('state_id')
-                    <small class="text-danger">
+                    @error('port_type_id')
+                        <div class="invalid-feedback">
+                            {{ $message }}
+                        </div>
+                    @enderror
+                </div>
 
-                        {{ $message }}
+                {{-- ========================================================= --}}
+                {{-- State Board --}}
+                {{-- ========================================================= --}}
 
-                    </small>
-                @enderror
+                <div class="col-md-4" id="state_board_wrapper">
+                    <label for="state_board_id" class="form-label">
+                        State Board
+                        <span class="text-danger">*</span>
+                    </label>
 
-            </div>
+                    <select name="state_board_id" id="state_board_id"
+                        class="form-select @error('state_board_id') is-invalid @enderror">
+                        <option value="">Please Select State Board</option>
+                    </select>
 
-            {{-- ========================================================= --}}
-            {{-- Port Type --}}
-            {{-- ========================================================= --}}
+                    @error('state_board_id')
+                        <div class="invalid-feedback">
+                            {{ $message }}
+                        </div>
+                    @enderror
+                </div>
 
-            <div class="col-md-4" id="port_type_wrapper">
-                <label for="port_type_id" class="form-label">
-                    Port Type
-                    <span class="text-danger">*</span>
-                </label>
+                {{-- ========================================================= --}}
+                {{-- Port --}}
+                {{-- ========================================================= --}}
 
-                <select name="port_type_id" id="port_type_id"
-                    class="form-select @error('port_type_id') is-invalid @enderror">
-                    <option value="">Please Select Port Type</option>
+                <div class="col-md-4" id="port_wrapper">
+                    <label for="port_id" class="form-label">
+                        Port
+                        <span class="text-danger">*</span>
+                    </label>
 
-                    <option value="1" @selected((string) $selectedPortTypeValue === '1')>
-                        Major
-                    </option>
+                    <select name="port_id" id="port_id" class="form-select @error('port_id') is-invalid @enderror">
+                        <option value="">Please Select Port</option>
+                    </select>
 
-                    <option value="2" @selected((string) $selectedPortTypeValue === '2')>
-                        Non-Major
-                    </option>
-                </select>
+                    @error('port_id')
+                        <div class="invalid-feedback">
+                            {{ $message }}
+                        </div>
+                    @enderror
+                </div>
 
-                @error('port_type_id')
-                    <div class="invalid-feedback">
-                        {{ $message }}
-                    </div>
-                @enderror
-            </div>
+                {{-- ========================================================= --}}
+                {{-- Multiple Ports --}}
+                {{-- ========================================================= --}}
 
-            {{-- ========================================================= --}}
-            {{-- State Board --}}
-            {{-- ========================================================= --}}
+                <div class="col-md-12" id="multiple_ports_wrapper">
+                    <label for="ports" class="form-label">
+                        Ports
+                        <span class="text-danger">*</span>
+                    </label>
 
-            <div class="col-md-4" id="state_board_wrapper">
-                <label for="state_board_id" class="form-label">
-                    State Board
-                    <span class="text-danger">*</span>
-                </label>
+                    <select name="ports[]" id="ports" class="form-select @error('ports') is-invalid @enderror"
+                        multiple></select>
 
-                <select name="state_board_id" id="state_board_id"
-                    class="form-select @error('state_board_id') is-invalid @enderror">
-                    <option value="">Please Select State Board</option>
-                </select>
+                    @error('ports')
+                        <div class="invalid-feedback">
+                            {{ $message }}
+                        </div>
+                    @enderror
 
-                @error('state_board_id')
-                    <div class="invalid-feedback">
-                        {{ $message }}
-                    </div>
-                @enderror
-            </div>
+                    @error('ports.*')
+                        <div class="invalid-feedback">
+                            {{ $message }}
+                        </div>
+                    @enderror
+                </div>
 
-            {{-- ========================================================= --}}
-            {{-- Port --}}
-            {{-- ========================================================= --}}
-
-            <div class="col-md-4" id="port_wrapper">
-                <label for="port_id" class="form-label">
-                    Port
-                    <span class="text-danger">*</span>
-                </label>
-
-                <select name="port_id" id="port_id" class="form-select @error('port_id') is-invalid @enderror">
-                    <option value="">Please Select Port</option>
-                </select>
-
-                @error('port_id')
-                    <div class="invalid-feedback">
-                        {{ $message }}
-                    </div>
-                @enderror
-            </div>
-
-            {{-- ========================================================= --}}
-            {{-- Multiple Ports --}}
-            {{-- ========================================================= --}}
-
-            <div class="col-md-12" id="multiple_ports_wrapper">
-                <label for="ports" class="form-label">
-                    Ports
-                    <span class="text-danger">*</span>
-                </label>
-
-                <select name="ports[]" id="ports" class="form-select @error('ports') is-invalid @enderror"
-                    multiple></select>
-
-                @error('ports')
-                    <div class="invalid-feedback">
-                        {{ $message }}
-                    </div>
-                @enderror
-
-                @error('ports.*')
-                    <div class="invalid-feedback">
-                        {{ $message }}
-                    </div>
-                @enderror
-            </div>
+            @endif
 
         </div>
 
+        @if ($canEditAdministrativeFields)
+            {{-- ========================================================= --}}
+            {{-- Reporting Officer --}}
+            {{-- ========================================================= --}}
+            <div class="row">
+                <div class="col-md-3 mb-3">
 
-        {{-- ========================================================= --}}
-        {{-- Reporting Officer --}}
-        {{-- ========================================================= --}}
-        <div class="row">
-            <div class="col-md-3 mb-3">
+                    <label for="report_to_user_id" class="form-label">
 
-                <label for="report_to_user_id" class="form-label">
+                        Reporting Officer <span class="text-danger">*</span>
 
-                    Reporting Officer <span class="text-danger">*</span>
+                    </label>
 
-                </label>
+                    <select name="report_to_user_id" id="report_to_user_id"
+                        class="form-select @error('report_to_user_id') is-invalid @enderror">
 
-                <select name="report_to_user_id" id="report_to_user_id"
-                    class="form-select @error('report_to_user_id') is-invalid @enderror">
+                        <option value="">Select Reporting Officer</option>
 
-                    <option value="">Select Reporting Officer</option>
+                        @foreach ($reportingOfficers as $officer)
+                            <option value="{{ $officer->id }}" @selected(old('report_to_user_id', $employee->report_to_user_id ?? '') == $officer->id)>
 
-                    @foreach ($reportingOfficers as $officer)
-                        <option value="{{ $officer->id }}" @selected(old('report_to_user_id', $employee->report_to_user_id ?? '') == $officer->id)>
+                                {{ $officer->employee_code }}
+                                -
+                                {{ $officer->full_name }}
 
-                            {{ $officer->employee_code }}
-                            -
-                            {{ $officer->full_name }}
+                            </option>
+                        @endforeach
 
-                        </option>
-                    @endforeach
+                    </select>
 
-                </select>
+                    @error('report_to_user_id')
+                        <small class="text-danger">
 
-                @error('report_to_user_id')
-                    <small class="text-danger">
+                            {{ $message }}
 
-                        {{ $message }}
+                        </small>
+                    @enderror
 
-                    </small>
-                @enderror
-
+                </div>
             </div>
-        </div>
+
+        @endif
 
     </div>
 
@@ -560,33 +624,39 @@
 </div>
 
 @if (isset($employee))
-    <div class="card shadow-sm mt-4">
 
-        <div class="card-header">
-            <h5 class="mb-0">
-                Status
-            </h5>
+    @if ($isSuperAdmin)
+        <div class="card shadow-sm mt-4">
+
+            <div class="card-header">
+
+                <h5 class="mb-0">
+                    Status
+                </h5>
+
+            </div>
+
+            <div class="card-body">
+
+                <select name="status" class="form-select w-25">
+
+                    <option value="1" @selected(old('status', $employee->status) == 1)>
+                        Active
+                    </option>
+
+                    <option value="0" @selected(old('status', $employee->status) == 0)>
+                        Inactive
+                    </option>
+
+                </select>
+
+            </div>
+
         </div>
-
-        <div class="card-body">
-
-            <select name="status" class="form-select w-25">
-
-                <option value="1" @selected(old('status', $employee->status) == 1)>
-                    Active
-                </option>
-
-                <option value="0" @selected(old('status', $employee->status) == 0)>
-                    Inactive
-                </option>
-
-            </select>
-
-        </div>
-
-    </div>
+    @endif
 @else
     <input type="hidden" name="status" value="1">
+
 @endif
 
 <div class="mt-4">

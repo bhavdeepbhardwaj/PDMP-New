@@ -24,8 +24,9 @@ class LoginRequest extends FormRequest
     {
         return [
             'employee_code' => ['required', 'string'],
-            'password'      => ['required', 'string'],
-            'remember'      => ['nullable', 'boolean'],
+            'password' => ['required', 'string'],
+            'captcha_code' => ['required', 'string', 'size:6'],
+            'remember' => ['nullable', 'boolean'],
         ];
     }
 
@@ -33,7 +34,9 @@ class LoginRequest extends FormRequest
     {
         return [
             'employee_code.required' => 'Employee Code is required.',
-            'password.required'      => 'Password is required.',
+            'password.required' => 'Password is required.',
+            'captcha_code.required' => 'CAPTCHA is required.',
+            'captcha_code.size' => 'CAPTCHA must be exactly 6 characters.',
         ];
     }
 }
