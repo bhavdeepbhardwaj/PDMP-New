@@ -94,7 +94,7 @@
     <script src="{{ asset('backend/global/js/config/colors.js') }}"></script>
     <script src="{{ asset('backend/assets/js/config/tour.js') }}"></script>
     <script>
-        Config.set('assets', '{{ asset('backend/assets') }}');
+        Config.set('assets', '{{ url('/backend/assets') }}');
     </script>
 
     <!-- Page -->

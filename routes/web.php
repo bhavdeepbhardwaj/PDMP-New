@@ -128,8 +128,6 @@ Route::middleware([
             )
             ->name('index');
 
-<<<<<<< HEAD
-=======
             Route::get('/', [EmployeeController::class, 'indexV2'])
             ->middleware(
                 'role.permission:' .
@@ -143,7 +141,6 @@ Route::middleware([
             )
             ->name('indexV2');
 
->>>>>>> 08427ed (V1.5)
 
         /*
     |--------------------------------------------------------------------------
