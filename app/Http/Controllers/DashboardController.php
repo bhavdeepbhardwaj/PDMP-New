@@ -11,8 +11,9 @@ class DashboardController extends Controller
      */
     public function index()
     {
-        return view('dashboard', [
-            'user' => auth()->user(),
-        ]);
+        // return view('dashboard', [
+        //     'user' => auth()->user(),
+        // ]);
+        return view('Dashboard.index');
     }
 }

@@ -102,6 +102,32 @@ class EmployeeController extends Controller
         );
     }
 
+    public function indexV2(Request $request): View|RedirectResponse
+    {
+        return $this->execute(
+
+            callback: function () use ($request) {
+
+                $employees = $this->employeeService
+                    ->getEmployees($request->all());
+
+                $dropdowns = $this->employeeService
+                    ->getDropdownData();
+
+                return view(
+                    'employees.index-v2',
+                    array_merge(
+                        compact('employees'),
+                        $dropdowns
+                    )
+                );
+            },
+
+            errorMessage: 'Unable to load employees.'
+
+        );
+    }
+
     /**
      * Show Employee Create Form.
      */

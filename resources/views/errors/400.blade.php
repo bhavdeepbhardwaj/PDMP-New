@@ -1,0 +1,40 @@
+{{-- resources/views/errors/400.blade.php --}}
+
+@extends('layouts.error')
+
+@section('title', '400 Error')
+
+@section('content')
+    <!-- Page -->
+    <div class="page vertical-align text-center" data-animsition-in="fade-in" data-animsition-out="fade-out">
+        <div class="page-content vertical-align-middle">
+            <header>
+                <h1 class="animation-slide-top">400</h1>
+                <p>Bad Request !</p>
+            </header>
+            <p class="error-advise">YOU SEEM TO BE TRYING TO FIND HIS WAY HOME</p>
+            <a class="btn btn-primary btn-round" href="/">GO TO HOME PAGE</a>
+
+            <footer class="page-copyright">
+                <p>Developed by NIC</p>
+                <p>Copyright &copy; <?php echo date('Y'); ?>. All RIGHT RESERVED.</p>
+                <div class="social">
+                    <a class="btn btn-icon btn-pure" href="javascript:void(0)">
+                        <i class="icon bd-twitter" aria-hidden="true"></i>
+                    </a>
+                    <a class="btn btn-icon btn-pure" href="javascript:void(0)">
+                        <i class="icon bd-facebook" aria-hidden="true"></i>
+                    </a>
+                    <a class="btn btn-icon btn-pure" href="javascript:void(0)">
+                        <i class="icon bd-dribbble" aria-hidden="true"></i>
+                    </a>
+                </div>
+            </footer>
+        </div>
+    </div>
+    <!-- End Page -->
+@endsection
+
+@push('scripts')
+
+@endpush

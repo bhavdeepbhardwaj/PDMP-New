@@ -128,6 +128,22 @@ Route::middleware([
             )
             ->name('index');
 
+<<<<<<< HEAD
+=======
+            Route::get('/', [EmployeeController::class, 'indexV2'])
+            ->middleware(
+                'role.permission:' .
+                    'SUPERADMIN,' .
+                    'MINISTRY_NODAL_OFFICER,' .
+                    'STATE_MARITIME_BOARD_NODAL_OFFICER,' .
+                    'PORT_NODAL_OFFICER,' .
+                    'PORT_MANAGER,' .
+                    'DATA_ENTRY_OFFICER,' .
+                    'NIC'
+            )
+            ->name('indexV2');
+
+>>>>>>> 08427ed (V1.5)
 
         /*
     |--------------------------------------------------------------------------
